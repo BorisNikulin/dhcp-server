@@ -5,7 +5,7 @@ class OpCode(Enum):
     REQUEST = 1
     REPLY = 2
 
-class DhcpMessageType(Enum):
+class MessageType(Enum):
     DISCOVER = 1
     OFFER = 2
     REQUEST = 3
@@ -21,30 +21,54 @@ class DhcpPacket:
     # most of the fields will not be uses for simplicity's sake
     codec = Struct('>4BI2H4IQ64s128s' + '4B3B' + 'B')
     optionHeaderDhcpMagic = [0x63, 0x82, 0x53, 0x63]
-    # endOptionBin = bytes([255])
 
-    def __init__(self, packet):
+    def __init__(self):
+        self.opCode = None
+        self.transactionId = None
+        self.secondsElapsed = None
+        self.clientIp = None
+        self.yourIp = None
+        self.serverIp = None
+        self.clientHardwareAddr = None
+        self.messageType = None
+
+
+    @staticmethod
+    def fromPacket(packet: bytes) -> DhcpPacket:
+        packetObj = DhcpPacket()
         unpacked = DhcpPacket.codec.unpack(packet)
-        self.opCode = unpacked[0]
-        self.transactionId = unpacked[4]
-        self.secondsElapsed = unpacked[5]
-        self.clientIp = unpacked[7]
-        self.yourIp = unpacked[8]
-        self.serverIp = unpacked[9]
-        self.clientHardwareAddr = unpacked[11]
-        self.messageType = DhcpMessageType(unpacked[20])
+        packetObj.opCode = unpacked[0]
+        packetObj.transactionId = unpacked[4]
+        packetObj.secondsElapsed = unpacked[5]
+        packetObj.clientIp = unpacked[7]
+        packetObj.yourIp = unpacked[8]
+        packetObj.serverIp = unpacked[9]
+        packetObj.clientHardwareAddr = unpacked[11]
+        packetObj.messageType = MessageType(unpacked[20])
+        return packetObj
 
-    def __init__(self, opCode, transactionId, secondsElapsed, clientIp, yourIp, serverIp, clientHardwareAddr, messageType):
-        self.opCode = opCode
-        self.transactionId = transactionId
-        self.secondsElapsed = secondsElapsed
-        self.clientIp = clientIp
-        self.yourIp = yourIp
-        self.serverIp = serverIp
-        self.clientHardwareAddr = clientHardwareAddr
-        self.messageType = messageType
+    @staticmethod
+    def fromArgs(
+            opCode: OpCode,
+            transactionId: int,
+            secondsElapsed: int, # unsigned
+            clientIp: int,
+            yourIp: int,
+            serverIp: int,
+            clientHardwareAddr: int,
+            messageType: MessageType) -> DhcpPacket:
+        packetObj = DhcpPacket()
+        packetObj.opCode = opCode
+        packetObj.transactionId = transactionId
+        packetObj.secondsElapsed = secondsElapsed
+        packetObj.clientIp = clientIp
+        packetObj.yourIp = yourIp
+        packetObj.serverIp = serverIp
+        packetObj.clientHardwareAddr = clientHardwareAddr
+        packetObj.messageType = messageType
+        return packetObj
 
-    def encode(self):
+    def encode(self) -> bytes:
         return DhcpPacket.codec.pack(
             self.opCode.value,
             1, # ethernet hardware type
