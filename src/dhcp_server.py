@@ -7,6 +7,8 @@ import time
 
 Seconds = float
 
+DEFAULT_LEASE_TIME: Seconds = 30
+
 class Node:
     def __init__(self, nextNode: Optional[Node], ip: int, leaseTimeOffset: Seconds):
         self.next = nextNode
@@ -24,11 +26,18 @@ class DhcpServer:
 
     # takes a packet and either retunrs a packet to send out or None to reply with no packets
     def recv(self, packet: DhcpPacket) -> DhcpPacket:
+        transaction: ServerTransaction
         if packet.transactionId not in self.__curTransactions:
+            transaction = ServerTransaction(packet)
+            transaction.yourIp = self.__nextIp
+            transaction.leaseTime = int(DEFAULT_LEASE_TIME)
+
+            self.__curTransactions[packet.transactionId] = transaction
             self.__freeIps()
             self.__setNextIp()
-            self.__curTransactions[packet.transactionId] = ServerTransaction()
-        transaction = self.__curTransactions[packet.transactionId]
+        else:
+            transaction = self.__curTransactions[packet.transactionId]
+
         returnPacket = transaction.recv(packet)
         if returnPacket is not None:
             self.__leaseIp(transaction.yourIp, transaction.clientHardwareAddr)
