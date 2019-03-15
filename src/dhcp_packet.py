@@ -16,22 +16,20 @@ class MessageType(Enum):
     INFORM = 8
 
 class DhcpPacket:
+    opCode: OpCode
+    transactionId: int
+    secondsElapsed: int
+    clientIp: int
+    yourIp: int
+    serverIp: int
+    clientHardwareAddr: int
+    messageType: MessageType
+
     # main packet + optional header and first optional (not really opional) + type of next optional
     # uses big endianness
     # most of the fields will not be uses for simplicity's sake
     codec = Struct('>4BI2H4IQ64s128s' + '4B3B' + 'B')
     optionHeaderDhcpMagic = [0x63, 0x82, 0x53, 0x63]
-
-    def __init__(self):
-        self.opCode = None
-        self.transactionId = None
-        self.secondsElapsed = None
-        self.clientIp = None
-        self.yourIp = None
-        self.serverIp = None
-        self.clientHardwareAddr = None
-        self.messageType = None
-
 
     @staticmethod
     def fromPacket(packet: bytes) -> DhcpPacket:

@@ -9,7 +9,8 @@ class TransactionType(Enum):
         return f'<{self.__class__.__name__}.{self.name}>'
 
 class Transaction:
+    transactionType: TransactionType
+
     def __init__(self):
-        self._phase = 0
-        self.transactionType = None
-        self.transactionId = None
+        self._phase: int = 0
+        self.transactionId: int
