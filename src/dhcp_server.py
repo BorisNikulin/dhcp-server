@@ -61,17 +61,28 @@ class DhcpServer:
 
     def __timeoutTransactions(self) -> None:
         """Drop any transactions whose transaction has not completed in a set period."""
-        pass
-
+        if self.__transactionByTimeouts is not isEmpty()
+            if self.__transactionByTimeouts.peekFront[0] is time.time()
+                
+                self.__transactionByTimeouts.popFront()
+                
     def __leaseIp(self, ip: int, clientHardwareAddr: int) -> None:
         """Reserve an IP address on the server."""
-        pass
+        self.__leasedIps.__setitem__(clientHardwareAddr, ip)
 
     def __freeIps(self) -> None:
         """Unreserve IPs based on expired lease times."""
-        pass
+        if self.__transactionByTimeouts is not isEmpty()
+            if self.__macsByClosestLeases.peekFront[0] is time.time()
+                mac = __macsByClosestLeases.peekFront[1]
+                self.__leasedIps.__delitem__(mac)
+                self.__macsByClosestLeases.popFront()
 
     def __setNextIp(self) -> None:
         """Update self.__nextIp with the next available IP or None if no such IP exists."""
-        pass
+        if self.__nextIP == 255
+            self.__nextIP = 1;
+        else self.__nextIP = self.__nextIP + 1;
+            
+            
 
