@@ -11,6 +11,8 @@ DEFAULT_LEASE_TIME: Seconds = 30
 DEFAULT_TRANSACTION_TIMEOUT: Seconds = 30
 
 class DhcpServer:
+    """Class for handling all DHCP packets and replying appropriately."""
+
     def __init__(self, netId: int):
         # note time here is a float and in the packet it's an unsigned int
         self.__startTime: Seconds = time.time()
@@ -25,8 +27,11 @@ class DhcpServer:
         self.netId: int = netId
         self.__nextIp: int = 1
 
-    # takes a packet and either retunrs a packet to send out or None to reply with no packets
     def recv(self, packet: DhcpPacket) -> DhcpPacket:
+        """Recieves a DHCP packet and returns a response packet.
+
+        The response packet may be None to indicate to not reply."""
+
         transaction: ServerTransaction
         if packet.transactionId not in self.__curTransactions:
             if packet.messageType == MessageType.DISCOVER:
@@ -47,17 +52,20 @@ class DhcpServer:
         return returnPacket
 
     def registerTransaction(self, transaction: ServerTransaction):
+        """Register a new transaction."""
+
         now: Seconds = time.time()
         timeout = now + DEFAULT_TRANSACTION_TIMEOUT - self.__startTime
 
-
-
     def __leaseIp(self, ip: int, clientHardwareAddr: int) -> None:
+        """Reserve an IP address on the server."""
         pass
 
     def __freeIps(self) -> None:
+        """Unreserve IPs based on expired lease times."""
         pass
 
     def __setNextIp(self) -> None:
+        """Update self.__nextIp with the next available IP or None if no such IP exists."""
         pass
 

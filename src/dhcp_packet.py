@@ -17,7 +17,32 @@ class MessageType(Enum):
     INFORM = 8
 
 class DhcpPartialPacket:
+    """Class for representing partially parsed DHCP packets.
+
+    All parsing is based on big endian.
+
+    Since DHCP options are variable width,
+    DHCP packets must look at the options to determine how much more to parse.
+
+    This class uses self.bytesNeeded to indicate how many more byte to feed to self.parseMore().
+    when self.bytesNeeded is 0, parsing is finished.
+    The complete packet can be accessed at self.packet
+    """
+
     def __init__(self, initialBytes: bytes):
+        """Construct the packet with the initial fixed sized segment of the packet.
+
+        The fixed sized of the packet is considered to be
+        from the begining to the to first option, which must be option 53 or message type,
+        and then the option type of the second option.
+
+        This means that on top of initial non optional segment,
+        the 4 byte option header magic cookie is needed,
+        as well as the byte for the length of the message type, which is 1,
+        The byte for the actual message type,
+        and lastly the byte for next option type.
+        """
+
         self.packet: DhcpPacket = DhcpPacket()
 
         unpacked = DhcpPacket.codec.unpack(initialBytes)
@@ -35,6 +60,26 @@ class DhcpPartialPacket:
         self.bytesNeeded: int = 0 if self.__optionType == 255 else 1
 
     def parseMore(self, moreBytes: bytes) -> None:
+        """Parse the moreBytes of length self.bytesNeeded.
+
+        The number of bytes given must be exactly equal to self.bytesNeeded
+        and not 0 otherwise a ValueError will be raised.
+        This means when self.bytesNeeded is 0, parsing has concluded,
+        and calling this method will raise a ValueError.
+
+        The fully parsed packet is available at self.packet
+
+        The only options suported are
+            * 0: pad byte (ignored)
+            * 51: Lease Time
+            * 255: end of options
+        All other options are ignored and skipped.
+
+        Option 53, message type, is parsed in the constructor
+        Thus is always the first option and always included.
+        """
+        # TODO?: move option 53, message type, parsing to this method
+
         if self.bytesNeeded == 0:
             raise ValueError('Parsing is complete')
         elif self.bytesNeeded != len(moreBytes):
@@ -61,6 +106,8 @@ class DhcpPartialPacket:
             self.bytesNeeded = 1
 
 class DhcpPacket:
+    """DHCP packet that requires option 53, message type, and optionally option 51, lease time"""
+
     opCode: OpCode
     transactionId: int
     secondsElapsed: int # unsigned
@@ -83,6 +130,11 @@ class DhcpPacket:
 
     @staticmethod
     def fromPacket(initialBytes: bytes) -> DhcpPartialPacket:
+        """Begin parsing variable width DHCP packet with always required bytes.
+
+        See DhcpPartialPacket.__init__() for detailed info on what constitues the initial bytes.
+        """
+
         return DhcpPartialPacket(initialBytes)
 
     @staticmethod
@@ -97,6 +149,8 @@ class DhcpPacket:
             messageType: MessageType,
             leaseTime: Optional[int] = None
         ) -> 'DhcpPacket':
+        """Consturct a DhcpPacket from args."""
+
         packetObj = DhcpPacket()
         packetObj.opCode = opCode
         packetObj.transactionId = transactionId
@@ -110,6 +164,8 @@ class DhcpPacket:
         return packetObj
 
     def encode(self) -> bytes:
+        """Construct a big endian binary DHCP packet."""
+
         lastType: int = 255
         extraBytes: bytes = b''
         if self.leaseTime is not None:

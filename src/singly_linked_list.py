@@ -27,6 +27,8 @@ class NodeIter(Generic[T]):
             raise StopIteration
 
 class DoubleEndedLinkedList(Generic[T]):
+    """Double ended singly linked list.""" # it is what is
+
     def __init__(self):
         self.head: Optional[Node[T]] = None
         self.tail: Optional[Node[T]] = None
@@ -51,7 +53,7 @@ class DoubleEndedLinkedList(Generic[T]):
             self.head = node
 
     def popFront(self) -> T:
-        """Assumes list is not empty"""
+        """Pops from the front and assumes list is not empty."""
         head = cast(Node[T], self.head)
         data = head.data
         self.head = head.nextNode

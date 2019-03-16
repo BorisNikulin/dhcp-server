@@ -9,6 +9,7 @@ class TransactionType(Enum):
         return f'<{self.__class__.__name__}.{self.name}>'
 
 class Transaction:
+    """Base class for all trnsactions."""
     transactionType: TransactionType
 
     def __init__(self):

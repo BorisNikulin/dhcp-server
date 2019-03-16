@@ -2,10 +2,14 @@ from dhcp_packet import DhcpPacket, MessageType
 from dhcp_transaction import Transaction, TransactionType
 
 class ServerTransaction(Transaction):
-    """Tagged union for possible transaction types from the server's perspective
-    with the transactionType being the tag.
-    The extra variables must be initialized by DhcpServer after construction
-    and checking transactionType (although all current transaction types use yourIp and leaseTime"""
+    """Class for representing an ongoing session with a client.
+
+    Various differing pieces of data are required for various transaction types.
+    It is the responsibility of the server to set the apprioriate variables
+    for the appropriate session type.
+
+    This class forms a tagged union or sum type with the self.transactionType being the tag.
+    """
 
     yourIp: int
     leaseTime: int # unsigned
