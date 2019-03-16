@@ -56,7 +56,7 @@ class DoubleEndedLinkedList(Generic[T]):
         """Peeks from the front and assumes list is not empty."""
         return cast(Node[T], self.head).data
 
-    def peekFront(self) -> T:
+    def peekBackself(self) -> T:
         """Peeks from the back and assumes list is not empty."""
         return cast(Node[T], self.tail).data
 
