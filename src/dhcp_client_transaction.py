@@ -3,12 +3,20 @@ from dhcp_packet import DhcpPacket
 
 from typing import Optional
 from enum import Enum
+import time
+import uuid
 
+Seconds = float
 DEFAULT_LEASE_TIME: Seconds = 30
 
 class ClientTransaction(Transaction):
     """Class for representing an onogoing transaction with the server."""
-    
+
+    def __init__(self):
+        self.clientHardwareAddr = uuid.getnode()
+        self.transactionId = uuid.uuid1().int>>64
+        self.transactionStartTime = time.time()
+        
     # start a transaction
     # returns a DhcpPacket to send to the server
     def start(self, transactionType: TransactionType) -> DhcpPacket:
@@ -19,13 +27,15 @@ class ClientTransaction(Transaction):
 
         self.transactionType = transactionType
         return DhcpPacket.fromArgs(
-            1,
-            random.getrandbits(),
-            0,
-            0,
-            0,
-            255,
-            
+            1, #OpCode
+            self.transactionId,
+            0, #secondsElapsed
+            0, #clientIp
+            0, #yourIp
+            255, #serverIp
+            self.clientHardwareAddr,
+            MessageType.DISCOVER,
+            DEFAULT_LEASE_TIME
             )
 
     # recieve a packet from server
@@ -37,24 +47,29 @@ class ClientTransaction(Transaction):
         """
         self._phase += 1
 
+        
         if packet.messageType == MessageType.OFFER:
-
-            return DhcpPacket.fromArgs(
-                1, #opCode
-                packet.transactionId,
-                packet.secondsElapsed,
-                0, #clientIP
-                packet.yourIP,
-                packet.serverIp,
-                packet.clientHardwareAddr,
-                MessageType.REQUEST,
-                DEFAULT_LEASE_TIME
-                )
-        if packet.messageType == MessageType.DECLINE:
+            if packet.clientHardwareAddr == self.clientHardwareAddr:
+                return DhcpPacket.fromArgs(
+                    1, #opCode
+                    packet.transactionId,
+                    time.time() - transactionStartTime,
+                    0, #clientIP
+                    packet.yourIP,
+                    packet.serverIp,
+                    packet.clientHardwareAddr,
+                    MessageType.REQUEST,
+                    DEFAULT_LEASE_TIME
+                    )
+        elif packet.messageType == MessageType.DECLINE:
             print("REQUEST DECLINED")
             return None
 
-        if packet.messageType == MessageType.ACK:
+        elif packet.messageType == MessageType.ACK:
+            if packet.clientHardwareAddr == self.clientHardwareAddr:
+                print("IP address successfully received.")
+            else:
+                print("MAC address does not match, could not ACK.")
             return None
 
         
