@@ -38,7 +38,7 @@ class DhcpServer:
             if packet.messageType is MessageType.DISCOVER:
                 if packet.clientHardwareAddr not in self.__leasedIps:
                     if self.__nextIp is not None:
-                        transaction = ServerTransaction(packet)
+                        transaction = ServerTransaction()
                         transaction.yourIp = self.__nextIp
                         transaction.leaseTime = int(DEFAULT_LEASE_TIME)
                         self.__registerTransaction(transaction)
@@ -48,9 +48,12 @@ class DhcpServer:
         else:
             transaction = self.__curTransactions[packet.transactionId]
 
-        returnPacket = transaction.recv(packet)
-        if returnPacket is not None:
-            self.__leaseIp(transaction.yourIp, transaction.clientHardwareAddr)
+        isTransactionOver, returnPacket = transaction.recv(packet)
+        if isTransactionOver:
+            if transaction.yourIp is not None:
+                self.__leaseIp(transaction.yourIp, transaction.clientHardwareAddr)
+            self.__freeTransaction(transaction.transactionId)
+
         return returnPacket
 
     def __registerTransaction(self, transaction: ServerTransaction):
@@ -67,6 +70,10 @@ class DhcpServer:
             while self.__transactionsByTimeouts.peekFront()[0] <= curTime:
                 self.__transactionsByTimeouts.popFront()
 
+    def __freeTransaction(self, transactionId: int) -> None:
+        """Remove the transaction from the server by id"""
+        pass
+
     def __leaseIp(self, ip: int, clientHardwareAddr: int) -> None:
         """Reserve an IP address on the server."""
         self.__leasedIps[ip] = clientHardwareAddr
@@ -77,8 +84,8 @@ class DhcpServer:
         if not self.__closestLeases.isEmpty():
             curTime = time.time()
             while self.__closestLeases.peekFront()[0] <= curTime:
-                mac = self.__closestLeases.peekFront()[1]
-                del self.__leasedIps[mac]
+                ip = self.__closestLeases.peekFront()[1]
+                del self.__leasedIps[ip]
                 self.__closestLeases.popFront()
 
     def __setNextIp(self) -> None:
