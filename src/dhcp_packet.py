@@ -1,6 +1,7 @@
 from typing import Optional
 from enum import Enum
 from struct import Struct
+from ipaddress import IPv4Address
 
 class OpCode(Enum):
     REQUEST = 1
@@ -111,9 +112,9 @@ class DhcpPacket:
     opCode: OpCode
     transactionId: int
     secondsElapsed: int # unsigned
-    clientIp: int
-    yourIp: int
-    serverIp: int
+    clientIp: IPv4Address
+    yourIp: IPv4Address
+    serverIp: IPv4Address
     clientHardwareAddr: int
     messageType: MessageType
     leaseTime: Optional[int] # unsigned
@@ -142,9 +143,9 @@ class DhcpPacket:
             opCode: OpCode,
             transactionId: int,
             secondsElapsed: int, # unsigned
-            clientIp: int,
-            yourIp: int,
-            serverIp: int,
+            clientIp: IPv4Address,
+            yourIp: IPv4Address,
+            serverIp: IPv4Address,
             clientHardwareAddr: int,
             messageType: MessageType,
             leaseTime: Optional[int] = None
@@ -180,9 +181,9 @@ class DhcpPacket:
             self.transactionId,
             self.secondsElapsed,
             1 << 15, # server will reply via broadcasts
-            self.clientIp,
-            self.yourIp,
-            self.serverIp,
+            int(self.clientIp),
+            int(self.yourIp),
+            int(self.serverIp),
             0, # gateway ip
             self.clientHardwareAddr,
             b'', # servername
@@ -192,3 +193,15 @@ class DhcpPacket:
             1,
             self.messageType.value,
             lastType) + extraBytes
+
+    def __repr__(self):
+        return (f'{self.__class__.__name__}.fromArgs('
+            f'opCode={self.opCode!s}, '
+            f'transactionId={self.transactionId!r}, '
+            f'secondsElapsed={self.secondsElapsed!r}, '
+            f'clientIp={self.clientIp!r}, '
+            f'yourIp={self.yourIp!r}, '
+            f'serverIp={self.serverIp!r}, '
+            f'clientHardwareAddr={self.clientHardwareAddr!r}, '
+            f'messageType={self.messageType!s}, '
+            f'leaseTime={self.leaseTime!r})')
