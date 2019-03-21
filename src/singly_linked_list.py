@@ -2,6 +2,7 @@ from typing import Optional, TypeVar, Generic, cast, Iterator
 
 T = TypeVar('T')
 
+
 class Node(Generic[T]):
     def __init__(self, nextNode: Optional['Node[T]'], data: T):
         self.nextNode = nextNode
@@ -26,8 +27,9 @@ class NodeIter(Generic[T]):
         else:
             raise StopIteration
 
+
 class DoubleEndedLinkedList(Generic[T]):
-    """Double ended singly linked list.""" # it is what is
+    """Double ended singly linked list."""  # it is what is
 
     def __init__(self):
         self.head: Optional[Node[T]] = None
@@ -56,7 +58,7 @@ class DoubleEndedLinkedList(Generic[T]):
         """Peeks from the front and assumes list is not empty."""
         return cast(Node[T], self.head).data
 
-    def peekBackself(self) -> T:
+    def peekBack(self) -> T:
         """Peeks from the back and assumes list is not empty."""
         return cast(Node[T], self.tail).data
 

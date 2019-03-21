@@ -10,18 +10,22 @@ Seconds = float
 DEFAULT_LEASE_TIME: Seconds = 30
 DEFAULT_TRANSACTION_TIMEOUT: Seconds = 30
 
+
 class DhcpServer:
     """Class for handling all DHCP packets and replying appropriately."""
 
     def __init__(self, netId: int):
         # map from ip addresses to macs
         self.__leasedIps: MutableMapping[int, int] = {}
-        # singly linked list head for time of timeout and macs sorted by ascending time of timeout
-        self.__closestLeases: DoubleEndedLinkedList[Tuple[Seconds, int]] = DoubleEndedLinkedList()
+        # singly linked list head for time of timeout
+        # and macs sorted by ascending time of timeout
+        self.__closestLeases: DoubleEndedLinkedList[
+            Tuple[Seconds, int]] = DoubleEndedLinkedList()
         # map from transaction ids to ServerTransactions
         self.__curTransactions: MutableMapping[int, ServerTransaction] = {}
         # singly linked list of transactions by closest timeout
-        self.__transactionsByTimeouts: DoubleEndedLinkedList[Tuple[Seconds, ServerTransaction]] = DoubleEndedLinkedList()
+        self.__transactionsByTimeouts: DoubleEndedLinkedList[
+            Tuple[Seconds, ServerTransaction]] = DoubleEndedLinkedList()
         self.netId: int = netId
         self.__nextIp: Optional[int] = 1
 
@@ -51,7 +55,9 @@ class DhcpServer:
         isTransactionOver, returnPacket = transaction.recv(packet)
         if isTransactionOver:
             if transaction.yourIp is not None:
-                self.__leaseIp(transaction.yourIp, transaction.clientHardwareAddr)
+                self.__leaseIp(
+                    transaction.yourIp,
+                    transaction.clientHardwareAddr)
             self.__freeTransaction(transaction.transactionId)
 
         return returnPacket
@@ -64,7 +70,8 @@ class DhcpServer:
         self.__transactionsByTimeouts.pushBack((timeout, transaction))
 
     def __timeoutTransactions(self) -> None:
-        """Drop any transactions whose transaction has not completed in a set period."""
+        """Drop any transactions whose transaction has not completed
+        in a set period."""
         if not self.__transactionsByTimeouts.isEmpty():
             curTime = time.time()
             while self.__transactionsByTimeouts.peekFront()[0] <= curTime:
@@ -89,7 +96,8 @@ class DhcpServer:
                 self.__closestLeases.popFront()
 
     def __setNextIp(self) -> None:
-        """Update self.__nextIp with the next available IP or None if no such IP exists."""
+        """Update self.__nextIp with the next available IP
+        or None if no such IP exists."""
         lastIp: int
         if self.__nextIp is None:
             self.__nextIp = 1

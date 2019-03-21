@@ -3,9 +3,11 @@ from enum import Enum
 from struct import Struct
 from ipaddress import IPv4Address
 
+
 class OpCode(Enum):
     REQUEST = 1
     REPLY = 2
+
 
 class MessageType(Enum):
     DISCOVER = 1
@@ -17,6 +19,7 @@ class MessageType(Enum):
     RELEASE = 7
     INFORM = 8
 
+
 class DhcpPartialPacket:
     """Class for representing partially parsed DHCP packets.
 
@@ -25,7 +28,8 @@ class DhcpPartialPacket:
     Since DHCP options are variable width,
     DHCP packets must look at the options to determine how much more to parse.
 
-    This class uses self.bytesNeeded to indicate how many more byte to feed to self.parseMore().
+    This class uses self.bytesNeeded to indicate how many more bytes
+    to feed to self.parseMore().
     when self.bytesNeeded is 0, parsing is finished.
     The complete packet can be accessed at self.packet
     """
@@ -34,7 +38,8 @@ class DhcpPartialPacket:
         """Construct the packet with the initial fixed sized segment of the packet.
 
         The fixed sized of the packet is considered to be
-        from the begining to the to first option, which must be option 53 or message type,
+        from the begining to the to first option,
+        which must be option 53 or message type,
         and then the option type of the second option.
 
         This means that on top of initial non optional segment,
@@ -84,14 +89,16 @@ class DhcpPartialPacket:
         if self.bytesNeeded == 0:
             raise ValueError('Parsing is complete')
         elif self.bytesNeeded != len(moreBytes):
-            raise ValueError('Extra bytes given does not correspond with number of bytes needed')
+            raise ValueError(
+                'Extra bytes given does not correspond '
+                'with number of bytes needed')
 
         if self.__optionType is None:
             self.__optionType = int.from_bytes(moreBytes, 'big', signed=False)
-            if self.__optionType == 255: # end options option
+            if self.__optionType == 255:  # end options option
                 self.bytesNeeded = 0
             else:
-                if self.__optionType == 0: # pad option
+                if self.__optionType == 0:  # pad option
                     self.__optionType = None
                 self.bytesNeeded = 1
 
@@ -101,28 +108,29 @@ class DhcpPartialPacket:
 
         else:
             if self.__optionType == 51:
-                DhcpPacket.leaseTime = int.from_bytes(moreBytes, 'big', signed=False)
+                DhcpPacket.leaseTime = int.from_bytes(
+                    moreBytes, 'big', signed=False)
             self.__optionType = None
             self.__optionLen = None
             self.bytesNeeded = 1
 
+
 class DhcpPacket:
-    """DHCP packet that requires option 53, message type, and optionally option 51, lease time"""
+    """DHCP packet that requires option 53, message type,
+    and optionally option 51, lease time"""
 
     opCode: OpCode
     transactionId: int
-    secondsElapsed: int # unsigned
+    secondsElapsed: int  # unsigned
     clientIp: IPv4Address
     yourIp: IPv4Address
     serverIp: IPv4Address
     clientHardwareAddr: int
     messageType: MessageType
-    leaseTime: Optional[int] # unsigned
+    leaseTime: Optional[int]  # unsigned
 
-    def __init__(self):
-        leaseTime = None
-
-    # main packet + optional header and first optional (not really opional) + type of next optional
+    # main packet + optional header and first optional (not really opional)
+    # + type of next optional
     # uses big endianness
     # most of the fields will not be used for simplicity's sake
     codec = Struct('>4BI2H4IQ64s128s' + '4B3B' + 'B')
@@ -133,7 +141,8 @@ class DhcpPacket:
     def fromPacket(initialBytes: bytes) -> DhcpPartialPacket:
         """Begin parsing variable width DHCP packet with always required bytes.
 
-        See DhcpPartialPacket.__init__() for detailed info on what constitues the initial bytes.
+        See DhcpPartialPacket.__init__() for detailed info
+        on what constitues the initial bytes.
         """
 
         return DhcpPartialPacket(initialBytes)
@@ -142,14 +151,14 @@ class DhcpPacket:
     def fromArgs(
             opCode: OpCode,
             transactionId: int,
-            secondsElapsed: int, # unsigned
+            secondsElapsed: int,  # unsigned
             clientIp: IPv4Address,
             yourIp: IPv4Address,
             serverIp: IPv4Address,
             clientHardwareAddr: int,
             messageType: MessageType,
             leaseTime: Optional[int] = None
-        ) -> 'DhcpPacket':
+            ) -> 'DhcpPacket':
         """Consturct a DhcpPacket from args."""
 
         packetObj = DhcpPacket()
@@ -171,23 +180,26 @@ class DhcpPacket:
         extraBytes: bytes = b''
         if self.leaseTime is not None:
             lastType = 51
-            extraBytes = bytes([4]) + self.leaseTime.to_bytes(4, 'big') + bytes([255])
+            extraBytes = (
+                bytes([4]) +
+                self.leaseTime.to_bytes(4, 'big') +
+                bytes([255]))
 
         return DhcpPacket.codec.pack(
             self.opCode.value,
-            1, # ethernet hardware type
-            6, # 6 byte hardware addresses (mac)
+            1,  # ethernet hardware type
+            6,  # 6 byte hardware addresses (mac)
             0,
             self.transactionId,
             self.secondsElapsed,
-            1 << 15, # server will reply via broadcasts
+            1 << 15,  # server will reply via broadcasts
             int(self.clientIp),
             int(self.yourIp),
             int(self.serverIp),
-            0, # gateway ip
+            0,  # gateway ip
             self.clientHardwareAddr,
-            b'', # servername
-            b'', # boot filename
+            b'',  # servername
+            b'',  # boot filename
             *DhcpPacket.__optionHeaderDhcpMagic,
             53,
             1,
@@ -195,7 +207,8 @@ class DhcpPacket:
             lastType) + extraBytes
 
     def __repr__(self):
-        return (f'{self.__class__.__name__}.fromArgs('
+        return (
+            f'{self.__class__.__name__}.fromArgs('
             f'opCode={self.opCode!s}, '
             f'transactionId={self.transactionId!r}, '
             f'secondsElapsed={self.secondsElapsed!r}, '
