@@ -26,8 +26,7 @@ class ClientTransaction(Transaction):
 
         Returns the DHCP packet to send to the server.
         """
-        if transactionType == RELEASE or transactionType == DISCOVER:
-            clientIp = IPv4Address("0.0.0.0")
+        
             
         self.transactionType = transactionType
         return DhcpPacket.fromArgs(
@@ -35,8 +34,8 @@ class ClientTransaction(Transaction):
             self.transactionId,
             0, #secondsElapsed
             clientIp, #clientIp
-            IPv4Address("0.0.0.0"), #yourIp
-            IPv4Address("255.255.255.255"), #serverIp
+            IPv4Address('0.0.0.0'), #yourIp
+            IPv4Address('255.255.255.255'), #serverIp
             self.clientHardwareAddr,
             MessageType.DISCOVER,
             DEFAULT_LEASE_TIME
