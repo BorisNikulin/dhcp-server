@@ -1,5 +1,5 @@
 from dhcp_transaction import Transaction, TransactionType
-from dhcp_packet import DhcpPacket
+from dhcp_packet import DhcpPacket, MessageType, OpCode
 
 from typing import Optional
 from enum import Enum
@@ -13,9 +13,11 @@ class ClientTransaction(Transaction):
     """Class for representing an onogoing transaction with the server."""
 
     def __init__(self):
-        self.clientHardwareAddr = uuid.getnode()
-        self.transactionId = uuid.uuid1().int>>64
-        self.transactionStartTime = time.time()
+        clientHardwareAddr = uuid.getnode()
+        transactionId = uuid.uuid1().int>>64
+        transactionStartTime = time.time()
+        clientIp: IPv4Address
+        yourIp: IPv4Address
         
     # start a transaction
     # returns a DhcpPacket to send to the server
@@ -24,15 +26,17 @@ class ClientTransaction(Transaction):
 
         Returns the DHCP packet to send to the server.
         """
-
+        if transactionType == RELEASE or transactionType == DISCOVER:
+            clientIp = IPv4Address("0.0.0.0")
+            
         self.transactionType = transactionType
         return DhcpPacket.fromArgs(
-            1, #OpCode
+            OpCode.REQUEST, #OpCode
             self.transactionId,
             0, #secondsElapsed
-            0, #clientIp
-            0, #yourIp
-            255, #serverIp
+            clientIp, #clientIp
+            IPv4Address("0.0.0.0"), #yourIp
+            IPv4Address("255.255.255.255"), #serverIp
             self.clientHardwareAddr,
             MessageType.DISCOVER,
             DEFAULT_LEASE_TIME
@@ -50,26 +54,33 @@ class ClientTransaction(Transaction):
         
         if packet.messageType == MessageType.OFFER:
             if packet.clientHardwareAddr == self.clientHardwareAddr:
-                return DhcpPacket.fromArgs(
-                    1, #opCode
-                    packet.transactionId,
-                    time.time() - transactionStartTime,
-                    0, #clientIP
-                    packet.yourIP,
-                    packet.serverIp,
-                    packet.clientHardwareAddr,
-                    MessageType.REQUEST,
-                    DEFAULT_LEASE_TIME
-                    )
+                if _phase == 1:
+                    return DhcpPacket.fromArgs(
+                        OpCode.REQUEST, #opCode
+                        packet.transactionId,
+                        time.time() - transactionStartTime,
+                        packet.clientIP, #clientIP
+                        packet.yourIP,
+                        packet.serverIp,
+                        packet.clientHardwareAddr,
+                        MessageType.REQUEST,
+                        DEFAULT_LEASE_TIME
+                        )
+                else:
+                    print("Client: Error: Phase-MessageType mismatch.")
+                    return None
         elif packet.messageType == MessageType.DECLINE:
             print("REQUEST DECLINED")
             return None
 
         elif packet.messageType == MessageType.ACK:
             if packet.clientHardwareAddr == self.clientHardwareAddr:
-                print("IP address successfully received.")
+                if _phase == 2:
+                    print("Client: IP address successfully received: " + packet.yourIP)
+                else:
+                    print("Client: Error: Phase-MessageType mismatch")
             else:
-                print("MAC address does not match, could not ACK.")
+                print("Client: MAC address does not match, could not ACK.")
             return None
 
         
