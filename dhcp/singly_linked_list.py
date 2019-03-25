@@ -1,4 +1,4 @@
-from typing import Optional, TypeVar, Generic, cast, Iterator
+from typing import Optional, TypeVar, Generic, cast, Iterator, Callable
 
 T = TypeVar('T')
 
@@ -68,6 +68,26 @@ class DoubleEndedLinkedList(Generic[T]):
         data = head.data
         self.head = head.nextNode
         return data
+
+    def remove(self, elem: T) -> None:
+        """Removes the first element that equals the given one."""
+        self.removeBy(elem.__eq__)
+
+    def removeBy(self, cmpFunc: Callable[[T], bool]) -> None:
+        """Removes the first element using the comparing function that
+        returns true for the element to remove.
+        """
+
+        if self.head is not None:
+            if cmpFunc(self.head.data):
+                self.head = self.head.nextNode
+            else:
+                curNode = self.head
+                while curNode.nextNode is not None and not cmpFunc(curNode.nextNode.data):
+                    curNode = curNode.nextNode
+
+                if curNode.nextNode is not None:
+                    curNode.nextNode = curNode.nextNode.nextNode
 
     def isEmpty(self) -> bool:
         return self.head is None

@@ -32,6 +32,8 @@ class ServerTransaction(Transaction):
     serverIp: IPv4Address
     leaseTime: int  # unsigned
 
+    requestIp: IPv4Address
+
     def __init__(self):
         self.__transaction = None
 
@@ -63,6 +65,7 @@ class ServerTransaction(Transaction):
                 log.info(
                     'DISCOVER transaction: Recieved REQUEST of '
                     f'{packet.yourIp} for {packet.leaseTime} seconds')
+                self.requestIp = packet.yourIp
                 return DhcpPacket.fromArgs(
                     OpCode.REPLY,
                     self.transactionId,
@@ -95,6 +98,7 @@ class ServerTransaction(Transaction):
                 self.leaseTime)
 
             if packet.messageType is MessageType.ACK:
+                self.requestIp = packet.yourIp
                 return None
             else:
                 raise ValueError(
