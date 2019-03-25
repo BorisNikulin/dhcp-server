@@ -1,5 +1,5 @@
-from src/dhcp_client_class import DhcpClient
-from src/dhcp_transaction import TransactionType
+from src.dhcp_client_class import DhcpClient
+from src.dhcp_transaction import TransactionType
 
 class DhcpClientUI:
     """Client UI"""

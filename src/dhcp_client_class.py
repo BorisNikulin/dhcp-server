@@ -17,7 +17,7 @@ class DhcpClient:
         renew(TransactionType.DISCOVER)
         
     def renew(self, transactionType: TransactionType)->None:
-        
+        """Start at Discover or request depending on message type"""
         if transactionType == TransactionType.DISCOVER:
             #generate start packet for discover
             startPacket = self.transaction.start(transactionType)
