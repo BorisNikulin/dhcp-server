@@ -14,7 +14,8 @@ class DhcpClient:
         serverName = 'localhost'
         serverPort = 12000
         clientSocket = socket(AF_INET, SOCK_DGRAM)
-            
+        renew(TransactionType.DISCOVER)
+        
     def renew(self, transactionType: TransactionType)->None:
         
         if transactionType == TransactionType.DISCOVER:
