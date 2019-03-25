@@ -8,10 +8,10 @@ class DhcpClientUI:
     def __init__(self):
 
         #initialize DhcpClient, which sends DISCOVER message to server
-        dhcpClient = DhcpClient()
-        newIP: int(self.dhcpClient.clientIp)
+        self.dhcpClient = DhcpClient()
+        # newIP = int(self.dhcpClient.clientIp)
 
-        print("Client: new IP address is " + newIp)
+        print(f'Client: new IP address is {self.dhcpClient.clientIp}')
 
         while True:
             print("\nClient: Choose option: \n"+
@@ -25,12 +25,13 @@ class DhcpClientUI:
             if userInput == "1":
 
                 self.dhcpClient.renew(TransactionType.RENEW)
+
             elif userInput == "2":
                 self.dhcpClient.release()
             else:
                 if userInput == "3":
                     print("Client: Exiting.")
-                
+
                 else:
                     print("Client: Unrecognized input. Exiting")
                 self.dhcpClient.disconnect

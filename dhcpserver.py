@@ -6,7 +6,7 @@ import socket
 from ipaddress import IPv4Address, IPv4Interface
 
 SERVER_PORT = 4200
-SERVER_INTERFACE = IPv4Interface('192.168.0.255/24')
+SERVER_INTERFACE = IPv4Interface('192.168.1.255/24')
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -31,6 +31,7 @@ def parsePacket(packet: bytes) -> DhcpPacket:
 if __name__ == '__main__':
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     serverSocket.bind(('', SERVER_PORT))
+    serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     log.info(f'Server bound to port {SERVER_PORT}')
     server = DhcpServer(SERVER_INTERFACE)
 
@@ -40,4 +41,4 @@ if __name__ == '__main__':
         response = server.recv(packet)
         if response is not None:
             serverSocket.sendto(
-                response.encode(), ('', int(IPv4Address('255.255.255.255'))))
+                response.encode(), (int(IPv4Address('255.255.255.255'), SERVER_PORT)))
