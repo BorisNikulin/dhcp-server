@@ -55,9 +55,9 @@ class DhcpPartialPacket:
         self.packet.opCode = unpacked[0]
         self.packet.transactionId = unpacked[4]
         self.packet.secondsElapsed = unpacked[5]
-        self.packet.clientIp = unpacked[7]
-        self.packet.yourIp = unpacked[8]
-        self.packet.serverIp = unpacked[9]
+        self.packet.clientIp = IPv4Address(unpacked[7])
+        self.packet.yourIp = IPv4Address(unpacked[8])
+        self.packet.serverIp = IPv4Address(unpacked[9])
         # mask out unneeded bits of the client hardware address
         # using the hardware address length in bytes
         self.packet.clientHardwareAddr = unpacked[11] & (
