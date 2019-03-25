@@ -2,6 +2,7 @@ from dhcp_packet import DhcpPacket, MessageType, OpCode
 from dhcp_transaction import Transaction, TransactionType
 
 from typing import Optional, Tuple, Generator
+from ipaddress import IPv4Address
 
 
 class ServerTransaction(Transaction):
@@ -24,8 +25,8 @@ class ServerTransaction(Transaction):
     __transaction: Optional[
         Generator[DhcpPacket, DhcpPacket, Optional[DhcpPacket]]]
 
-    yourIp: int
-    serverIp: int
+    yourIp: IPv4Address
+    serverIp: IPv4Address
     leaseTime: int  # unsigned
 
     def __init__(self):
@@ -46,7 +47,7 @@ class ServerTransaction(Transaction):
                 packet.secondsElapsed,
                 packet.clientIp,
                 self.yourIp,
-                0,  # TODO: figure out what to do with serverIp (nothing?)
+                self.serverIp,
                 packet.clientHardwareAddr,
                 MessageType.OFFER,
                 self.leaseTime)
@@ -58,7 +59,7 @@ class ServerTransaction(Transaction):
                     packet.secondsElapsed,
                     packet.clientIp,
                     self.yourIp,
-                    0,  # TODO: server ip? see todo above
+                    self.serverIp,
                     packet.clientHardwareAddr,
                     MessageType.ACK,
                     self.leaseTime)
@@ -74,7 +75,7 @@ class ServerTransaction(Transaction):
                 packet.secondsElapsed,
                 packet.clientIp,
                 self.yourIp,
-                0,  # TODO: server ip? see todo above
+                self.serverIp,
                 packet.clientHardwareAddr,
                 MessageType.ACK,
                 self.leaseTime)
