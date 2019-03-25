@@ -1,6 +1,7 @@
 from dhcp.client_transaction import ClientTransaction
 from dhcp.transaction import TransactionType
 from dhcp.packet import DhcpPacket, MessageType, OpCode
+from ipaddress import IPv4Address
 from socket import *
 
 class DhcpClient:
@@ -8,12 +9,13 @@ class DhcpClient:
 
     def __init__(self):
 
-        clientIp: IPv4Address
-        transaction: ClientTransaction = ClientTransaction()
+        self.clientIp: IPv4Address
+        self.transaction: ClientTransaction = ClientTransaction()
+        self.serverName = 'localhost'
+        serverPort = 4200
+        self.clientSocket = socket(AF_INET, SOCK_DGRAM)
 
-        serverName = 'localhost'
-        serverPort = 12000
-        clientSocket = socket(AF_INET, SOCK_DGRAM)
+        self.transaction.clientIp = IPv4Address('0.0.0.0')
         self.renew(TransactionType.DISCOVER)
 
     def renew(self, transactionType: TransactionType)->None:
@@ -24,7 +26,7 @@ class DhcpClient:
 
             #send start packet
             print("Client: Sending discover message.")
-            clientSocket.sendto( startPacket.encode(),(serverName, serverPort))
+            self.clientSocket.sendto( startPacket.encode(),(self.serverName, serverPort))
 
             #receive return packet
             returnPacket, serverAddress = clientSocket.recvfrom(2048)
@@ -34,7 +36,7 @@ class DhcpClient:
         requestPacket = self.transaction.recv(returnPacket)
         #send request packet to server
         print("Client: Sending request message.")
-        clientSocket.sendto(requestPacket.encode(),(serverName, serverPort))
+        self.clientSocket.sendto(requestPacket.encode(),(self.serverName, serverPort))
         #receive return packet
         returnPacket, serverAddress = clientSocket.recvfrom(2048)
         print("Client: Received ACK message.")
@@ -52,6 +54,9 @@ class DhcpClient:
         releasePacket = self.transaction.release()
         #send releas packet to server
         print("Client: Sending release message.")
-        clientSocket.sendto(releasePacket.encode(),(serverName, serverPort))
+        self.clientSocket.sendto(releasePacket.encode(),(self.serverName, serverPort))
+
+    def disconnect()->None:
+        self.clientSocket.close()
 
 

@@ -1,5 +1,6 @@
 from dhcp.client_class import DhcpClient
 from dhcp.transaction import TransactionType
+from ipaddress import IPv4Address
 
 class DhcpClientUI:
     """Client UI"""
@@ -26,9 +27,13 @@ class DhcpClientUI:
                 self.dhcpClient.renew(TransactionType.RENEW)
             elif userInput == "2":
                 self.dhcpClient.release()
-            elif userInput == "3":
-                print("Client: Exiting.")
             else:
-                print("Client: Unrecognized input. Exiting")
+                if userInput == "3":
+                    print("Client: Exiting.")
+                
+                else:
+                    print("Client: Unrecognized input. Exiting")
+                self.dhcpClient.disconnect
+                quit()
 
 DhcpClientUI()

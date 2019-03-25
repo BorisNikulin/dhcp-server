@@ -1,6 +1,7 @@
 from dhcp.transaction import Transaction, TransactionType
 from dhcp.packet import DhcpPacket, MessageType, OpCode
 
+from ipaddress import IPv4Address
 from typing import Optional
 from enum import Enum
 import time
@@ -13,11 +14,11 @@ class ClientTransaction(Transaction):
     """Class for representing an onogoing transaction with the server."""
 
     def __init__(self):
-        clientHardwareAddr = uuid.getnode()
-        transactionId = uuid.uuid1().int>>64
-        transactionStartTime = time.time()
-        clientIp: IPv4Address
-        yourIp: IPv4Address
+        self.clientHardwareAddr = uuid.getnode()
+        self.transactionId = uuid.uuid1().int>>96
+        self.transactionStartTime = time.time()
+        self.clientIp: IPv4Address
+        self.yourIp: IPv4Address
 
     # start a transaction
     # returns a DhcpPacket to send to the server
