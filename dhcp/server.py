@@ -63,7 +63,7 @@ class DhcpServer:
                     self.__timeoutIps()
                     self.__setNextIp()
                     if self.__nextIp is not None:
-                        self.markIp(self.__nextIp)
+                        self.__markIp(self.__nextIp)
                         transaction = ServerTransaction()
                         transaction.transactionId = packet.transactionId
                         transaction.yourIp = self.__nextIp
@@ -91,7 +91,7 @@ class DhcpServer:
 
             elif packet.messageType is MessageType.REQUEST:
                 if packet.yourIp not in self.__leasedIps:
-                    self.markIp(packet.yourIp)
+                    self.__markIp(packet.yourIp)
                     transaction = ServerTransaction()
                     transaction.transactionId = packet.transactionId
                     transaction.yourIp = packet.yourIp
@@ -101,12 +101,12 @@ class DhcpServer:
                 else:
                     returnPacket = DhcpPacket.fromArgs(
                         OpCode.REPLY,
-                        transaction.transactionId,
+                        packet.transactionId,
                         packet.secondsElapsed,
                         IPv4Address(0),
                         IPv4Address(0),
                         self.interface.ip,
-                        transaction.clientHardwareAddr,
+                        packet.clientHardwareAddr,
                         MessageType.NAK)
 
             elif packet.messageType is MessageType.RELEASE:
@@ -118,30 +118,45 @@ class DhcpServer:
             transaction = self.__curTransactions[packet.transactionId]
 
         if transaction is not None:
-            isTransactionOver, returnPacket = transaction.recv(packet)
-            if isTransactionOver:
-                self.unmarkIp(transaction.yourIp)
-                if transaction.transactionType is TransactionType.DISCOVER:
-                    if transaction.requestIp not in self.__leasedIps:
+            try:
+                isTransactionOver, returnPacket = transaction.recv(packet)
+            except ValueError as ve:
+                log.error(f'Transaction error: {ve}')
+                self.__unmarkIp(transaction.yourIp)
+                self.__freeTransaction(transaction.transactionId)
+                returnPacket = DhcpPacket.fromArgs(
+                    OpCode.REPLY,
+                    transaction.transactionId,
+                    packet.secondsElapsed,
+                    IPv4Address(0),
+                    IPv4Address(0),
+                    self.interface.ip,
+                    transaction.clientHardwareAddr,
+                    MessageType.NAK)
+            else:
+                if isTransactionOver:
+                    self.__unmarkIp(transaction.yourIp)
+                    if transaction.transactionType is TransactionType.DISCOVER:
+                        if transaction.requestIp not in self.__leasedIps:
+                            self.__leaseIp(
+                                transaction.yourIp,
+                                transaction.clientHardwareAddr)
+                        else:
+                            returnPacket = DhcpPacket.fromArgs(
+                                OpCode.REPLY,
+                                transaction.transactionId,
+                                packet.secondsElapsed,
+                                packet.yourIp,
+                                IPv4Address(0),
+                                self.interface.ip,
+                                transaction.clientHardwareAddr,
+                                MessageType.NAK)
+                    elif transaction.transactionType is TransactionType.RENEW:
                         self.__leaseIp(
                             transaction.yourIp,
                             transaction.clientHardwareAddr)
-                    else:
-                        returnPacket = DhcpPacket.fromArgs(
-                            OpCode.REPLY,
-                            transaction.transactionId,
-                            packet.secondsElapsed,
-                            packet.yourIp,
-                            IPv4Address(0),
-                            self.interface.ip,
-                            transaction.clientHardwareAddr,
-                            MessageType.NAK)
-                elif transaction.transactionType is TransactionType.RENEW:
-                    self.__leaseIp(
-                        transaction.yourIp,
-                        transaction.clientHardwareAddr)
 
-                self.__freeTransaction(transaction.transactionId)
+                    self.__freeTransaction(transaction.transactionId)
 
         log.debug(f'Return packet: {returnPacket}')
         return returnPacket
@@ -201,13 +216,16 @@ class DhcpServer:
         self.__closestLeases.removeBy(lambda l: l[1] == ip)
         log.debug(f'Freed {ip}')
 
-    def markIp(self, ip: IPv4Address) -> None:
-        """Mark an IP as taken for the purpose of reserving during a transaction."""
+    def __markIp(self, ip: IPv4Address) -> None:
+        """Mark an IP as taken for
+        the purpose of reserving during a transaction.
+        """
+
         self.__markedIps.add(ip)
         log.debug(f'{ip} marked')
 
-    def unmarkIp(self, ip: IPv4Address) -> None:
-        """Unmark an IP. Assumes IP is marked. See markIP()"""
+    def __unmarkIp(self, ip: IPv4Address) -> None:
+        """Unmark an IP. Assumes IP is marked. See __markIP()"""
         self.__markedIps.remove(ip)
         log.debug(f'{ip} unmarked')
 

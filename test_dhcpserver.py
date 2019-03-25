@@ -1,12 +1,13 @@
-from dhcp.server import DhcpServer
-from dhcp.packet import *
+from dhcp.server import DhcpServer, OpCode, MessageType
+from dhcp.packet import DhcpPacket
 
 import logging
 from typing import cast
-import socket
 from ipaddress import IPv4Address, IPv4Interface
 
-logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(name)s - %(message)s')
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(levelname)s: %(name)s - %(message)s')
 
 if __name__ == '__main__':
     server = DhcpServer(IPv4Interface('192.168.0.255/24'))
@@ -95,3 +96,9 @@ if __name__ == '__main__':
         leaseTime)
 
     ret6 = server.recv(packet6)
+    print()
+    print()
+
+    # Error in ServerTransaction
+    server.recv(packet1)
+    server.recv(packet1)
