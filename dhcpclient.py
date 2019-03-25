@@ -22,6 +22,7 @@ class DhcpClientUI:
             userInput: str = input()
 
             if userInput == "1":
+
                 self.dhcpClient.renew(TransactionType.RENEW)
             elif userInput == "2":
                 self.dhcpClient.release()
@@ -29,5 +30,7 @@ class DhcpClientUI:
                 print("Client: Exiting.")
             else:
                 print("Client: Unrecognized input. Exiting")
+
+DhcpClientUI()
 
         

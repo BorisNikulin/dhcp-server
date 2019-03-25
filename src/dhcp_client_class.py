@@ -1,6 +1,6 @@
-from dhcp_client_transaction import ClientTransaction
-from dhcp_transaction import TransactionType
-from dhcp_packet import DhcpPacket, MessageType, OpCode
+from src.dhcp_transaction import TransactionType
+from src.dhcp_client_transaction import ClientTransaction
+from src.dhcp_packet import DhcpPacket, MessageType, OpCode
 from socket import *
 
 class DhcpClient:
@@ -14,10 +14,10 @@ class DhcpClient:
         serverName = 'localhost'
         serverPort = 12000
         clientSocket = socket(AF_INET, SOCK_DGRAM)
-        renew(TransactionType.DISCOVER)
+        self.renew(TransactionType.DISCOVER)
         
     def renew(self, transactionType: TransactionType)->None:
-        """Start at Discover or request depending on message type"""
+        """Start at Discover or request depending on transaction type"""
         if transactionType == TransactionType.DISCOVER:
             #generate start packet for discover
             startPacket = self.transaction.start(transactionType)
