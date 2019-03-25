@@ -1,8 +1,12 @@
 from dhcp.client_transaction import ClientTransaction
 from dhcp.transaction import TransactionType
 from dhcp.packet import DhcpPacket, MessageType, OpCode
-from ipaddress import IPv4Address
+from ipaddress import IPv4Address, IPv4Interface
 from socket import *
+
+
+SERVER_PORT = 4200
+SERVER_INTERFACE = '192.168.0.255'
 
 class DhcpClient:
     """Dhcp Client Logic"""
@@ -11,13 +15,24 @@ class DhcpClient:
 
         self.clientIp: IPv4Address
         self.transaction: ClientTransaction = ClientTransaction()
-        self.serverName = 'localhost'
-        self.serverPort = 4200
         self.clientSocket = socket(AF_INET, SOCK_DGRAM)
+        self.clientSocket.bind(('', SERVER_PORT))
 
         self.transaction.clientIp = IPv4Address('0.0.0.0')
         self.renew(TransactionType.DISCOVER)
 
+    def parsePacket(self, packet: bytes) -> DhcpPacket:
+        partialPacket = DhcpPacket.fromPacket(
+            packet[:DhcpPacket.initialPacketSize])
+        offset: int = DhcpPacket.initialPacketSize
+        while partialPacket.bytesNeeded > 0:
+            nextOffset = offset + partialPacket.bytesNeeded
+            partialPacket.parseMore(
+                packet[offset:offset + partialPacket.bytesNeeded])
+            offset = nextOffset
+
+        return partialPacket.packet
+    
     def renew(self, transactionType: TransactionType)->None:
         """Start at Discover or request depending on transaction type"""
         if transactionType == TransactionType.DISCOVER:
@@ -26,25 +41,32 @@ class DhcpClient:
 
             #send start packet
             print("Client: Sending discover message.")
-            self.clientSocket.sendto( startPacket.encode(),(self.serverName, self.serverPort))
+            self.clientSocket.sendto( startPacket.encode(),(SERVER_INTERFACE, SERVER_PORT))
 
             #receive return packet
-            returnPacket, serverAddress = self.clientSocket.recvfrom(2048)
+            returnBytes, serverAddress = self.clientSocket.recvfrom(2048)
+            returnPacket = self.parsePacket(returnBytes)
             print("Client: Received offer message.")
+
 
         #generate request packet
         requestPacket = self.transaction.recv(returnPacket)
-        #send request packet to server
-        print("Client: Sending request message.")
-        self.clientSocket.sendto(requestPacket.encode(),(self.serverName, self.serverPort))
-        #receive return packet
-        returnPacket, serverAddress = self.clientSocket.recvfrom(2048)
-        print("Client: Received ACK message.")
 
-        if returnPacket.messageType == MessageType.ACK:
-            self.clientIp = returnPacket.yourIp
+        if requestPacket is None:
+            print ("Client: Declined by server")
         else:
-            print("Client: Declined by server.")
+            #send request packet to server
+            print("Client: Sending request message.")
+            self.clientSocket.sendto(requestPacket.encode(),(SERVER_INTERFACE, SERVER_PORT))
+            #receive return packet
+            returnBytes, serverAddress = self.clientSocket.recvfrom(2048)
+            returnPacket = self.parsePacket(returnBytes)
+            print("Client: Received ACK message.")
+
+            if returnPacket.messageType == MessageType.ACK:
+                self.clientIp = returnPacket.yourIp
+            else:
+                print("Client: Declined by server.")
 
 
     def release(self)->None:
@@ -54,9 +76,9 @@ class DhcpClient:
         releasePacket = self.transaction.release()
         #send releas packet to server
         print("Client: Sending release message.")
-        self.clientSocket.sendto(releasePacket.encode(),(self.serverName, serverPort))
+        self.clientSocket.sendto(releasePacket.encode(),(SERVER_INTERFACE, SERVER_PORT))
 
-    def disconnect()->None:
+    def disconnect(self)->None:
         self.clientSocket.close()
 
 

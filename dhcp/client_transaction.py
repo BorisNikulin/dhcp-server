@@ -19,6 +19,7 @@ class ClientTransaction(Transaction):
         self.transactionStartTime = time.time()
         self.clientIp: IPv4Address
         self.yourIp: IPv4Address
+        self._phase: int = 0;
 
     # start a transaction
     # returns a DhcpPacket to send to the server
@@ -39,7 +40,7 @@ class ClientTransaction(Transaction):
             IPv4Address('255.255.255.255'), #serverIp
             self.clientHardwareAddr,
             MessageType.DISCOVER,
-            DEFAULT_LEASE_TIME
+            int(DEFAULT_LEASE_TIME)
             )
 
     # recieve a packet from server
@@ -50,21 +51,21 @@ class ClientTransaction(Transaction):
         The response packet may be None to indicate conclusion of the session.
         """
         self._phase += 1
-
+        
 
         if packet.messageType == MessageType.OFFER:
             if packet.clientHardwareAddr == self.clientHardwareAddr:
-                if _phase == 1:
+                if self._phase == 1:
                     return DhcpPacket.fromArgs(
                         OpCode.REQUEST, #opCode
                         packet.transactionId,
-                        time.time() - transactionStartTime,
-                        packet.clientIP, #clientIP
-                        packet.yourIP,
+                        time.time() - self.transactionStartTime,
+                        packet.clientIp, #clientIP
+                        packet.yourIp,
                         packet.serverIp,
                         packet.clientHardwareAddr,
                         MessageType.REQUEST,
-                        DEFAULT_LEASE_TIME
+                        int(DEFAULT_LEASE_TIME)
                         )
                 else:
                     print("Client: Error: Phase-MessageType mismatch.")
@@ -75,15 +76,16 @@ class ClientTransaction(Transaction):
 
         elif packet.messageType == MessageType.ACK:
             if packet.clientHardwareAddr == self.clientHardwareAddr:
-                if _phase == 2:
-                    print("Client: IP address successfully received: " + packet.yourIP)
+                if self._phase == 2:
+                    print("Client: IP address successfully received: " + str(packet.yourIp))
                     self.clientIp = packet.yourIp
                 else:
                     print("Client: Error: Phase-MessageType mismatch")
             else:
                 print("Client: MAC address does not match, could not ACK.")
             return None
-    def release()->DhcpPacket:
+        return None
+    def release(self)->DhcpPacket:
         return DhcpPacket.fromArgs(
                         OpCode.REQUEST, #opCode
                         0,#ID
@@ -93,5 +95,5 @@ class ClientTransaction(Transaction):
                         IPv4Address('255.255.255.255'),
                         self.clientHardwareAddr,
                         MessageType.REQUEST,
-                        DEFAULT_LEASE_TIME
+                        int(DEFAULT_LEASE_TIME)
                         )
