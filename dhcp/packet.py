@@ -58,7 +58,10 @@ class DhcpPartialPacket:
         self.packet.clientIp = unpacked[7]
         self.packet.yourIp = unpacked[8]
         self.packet.serverIp = unpacked[9]
-        self.packet.clientHardwareAddr = unpacked[11]
+        # mask out unneeded bits of the client hardware address
+        # using the hardware address length in bytes
+        self.packet.clientHardwareAddr = unpacked[11] & (
+            (1 << (unpacked[3] * 8)) - 1)
         self.packet.messageType = MessageType(unpacked[20])
 
         self.__optionType: Optional[int] = unpacked[21]

@@ -1,8 +1,11 @@
-from dhcp_packet import DhcpPacket, MessageType, OpCode
-from dhcp_transaction import Transaction, TransactionType
+from dhcp.packet import DhcpPacket, MessageType, OpCode
+from dhcp.transaction import Transaction, TransactionType
 
+import logging
 from typing import Optional, Tuple, Generator
 from ipaddress import IPv4Address
+
+log = logging.getLogger(__name__)
 
 
 class ServerTransaction(Transaction):
@@ -41,6 +44,10 @@ class ServerTransaction(Transaction):
 
         if packet.messageType is MessageType.DISCOVER:
             self.transactionType = TransactionType.DISCOVER
+            log.info('Start DISCOVER transaction')
+            log.info(
+                'DISCOVER transaction: Reply with OFFER of '
+                f'{self.yourIp} for {self.leaseTime} seconds')
             packet = yield DhcpPacket.fromArgs(
                 OpCode.REPLY,
                 self.transactionId,
@@ -53,6 +60,9 @@ class ServerTransaction(Transaction):
                 self.leaseTime)
 
             if packet.messageType is MessageType.REQUEST:
+                log.info(
+                    'DISCOVER transaction: Recieved REQUEST of '
+                    f'{packet.yourIp} for {packet.leaseTime} seconds')
                 return DhcpPacket.fromArgs(
                     OpCode.REPLY,
                     self.transactionId,
@@ -69,6 +79,10 @@ class ServerTransaction(Transaction):
 
         elif packet.messageType is MessageType.REQUEST:
             self.transactionType = TransactionType.RENEW
+            log.info('Start RENEW transaction')
+            log.info(
+                'RENEW transaction: Recieved REQUEST of '
+                f'{packet.yourIp} for {packet.leaseTime} seconds')
             packet = yield DhcpPacket.fromArgs(
                 OpCode.REPLY,
                 self.transactionId,

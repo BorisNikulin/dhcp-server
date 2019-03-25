@@ -1,6 +1,6 @@
-from src.dhcp_transaction import TransactionType
-from src.dhcp_client_transaction import ClientTransaction
-from src.dhcp_packet import DhcpPacket, MessageType, OpCode
+from dhcp.client_transaction import ClientTransaction
+from dhcp.transaction import TransactionType
+from dhcp.packet import DhcpPacket, MessageType, OpCode
 from socket import *
 
 class DhcpClient:
@@ -10,26 +10,26 @@ class DhcpClient:
 
         clientIp: IPv4Address
         transaction: ClientTransaction = ClientTransaction()
-        
+
         serverName = 'localhost'
         serverPort = 12000
         clientSocket = socket(AF_INET, SOCK_DGRAM)
         self.renew(TransactionType.DISCOVER)
-        
+
     def renew(self, transactionType: TransactionType)->None:
         """Start at Discover or request depending on transaction type"""
         if transactionType == TransactionType.DISCOVER:
             #generate start packet for discover
             startPacket = self.transaction.start(transactionType)
-            
+
             #send start packet
             print("Client: Sending discover message.")
             clientSocket.sendto( startPacket.encode(),(serverName, serverPort))
-            
+
             #receive return packet
             returnPacket, serverAddress = clientSocket.recvfrom(2048)
             print("Client: Received offer message.")
-        
+
         #generate request packet
         requestPacket = self.transaction.recv(returnPacket)
         #send request packet to server
@@ -43,7 +43,7 @@ class DhcpClient:
             self.clientIp = returnPacket.yourIp
         else:
             print("Client: Declined by server.")
-        
+
 
     def release(self)->None:
         self.clientIp = IPv4Address('0.0.0.0')
@@ -53,5 +53,5 @@ class DhcpClient:
         #send releas packet to server
         print("Client: Sending release message.")
         clientSocket.sendto(releasePacket.encode(),(serverName, serverPort))
-        
-    
+
+

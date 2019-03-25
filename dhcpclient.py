@@ -1,5 +1,5 @@
-from src.dhcp_client_class import DhcpClient
-from src.dhcp_transaction import TransactionType
+from dhcp.client_class import DhcpClient
+from dhcp.transaction import TransactionType
 
 class DhcpClientUI:
     """Client UI"""
@@ -9,7 +9,7 @@ class DhcpClientUI:
         #initialize DhcpClient, which sends DISCOVER message to server
         dhcpClient = DhcpClient()
         newIP: int(self.dhcpClient.clientIp)
-        
+
         print("Client: new IP address is " + newIp)
 
         while True:
@@ -32,5 +32,3 @@ class DhcpClientUI:
                 print("Client: Unrecognized input. Exiting")
 
 DhcpClientUI()
-
-        

@@ -1,5 +1,5 @@
-from src.dhcp_transaction import Transaction, TransactionType
-from src.dhcp_packet import DhcpPacket, MessageType, OpCode
+from dhcp.transaction import Transaction, TransactionType
+from dhcp.packet import DhcpPacket, MessageType, OpCode
 
 from typing import Optional
 from enum import Enum
@@ -18,7 +18,7 @@ class ClientTransaction(Transaction):
         transactionStartTime = time.time()
         clientIp: IPv4Address
         yourIp: IPv4Address
-        
+
     # start a transaction
     # returns a DhcpPacket to send to the server
     def start(self, transactionType: TransactionType) -> DhcpPacket:
@@ -26,8 +26,8 @@ class ClientTransaction(Transaction):
 
         Returns the DHCP packet to send to the server.
         """
-        
-            
+
+
         self.transactionType = transactionType
         return DhcpPacket.fromArgs(
             OpCode.REQUEST, #OpCode
@@ -50,7 +50,7 @@ class ClientTransaction(Transaction):
         """
         self._phase += 1
 
-        
+
         if packet.messageType == MessageType.OFFER:
             if packet.clientHardwareAddr == self.clientHardwareAddr:
                 if _phase == 1:
@@ -94,5 +94,3 @@ class ClientTransaction(Transaction):
                         MessageType.REQUEST,
                         DEFAULT_LEASE_TIME
                         )
-        
-        
