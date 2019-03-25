@@ -50,6 +50,7 @@ class DhcpPartialPacket:
         """
 
         self.packet: DhcpPacket = DhcpPacket()
+        self.packet.leaseTime = None
 
         unpacked = DhcpPacket.codec.unpack(initialBytes)
         self.packet.opCode = unpacked[0]
@@ -111,7 +112,7 @@ class DhcpPartialPacket:
 
         else:
             if self.__optionType == 51:
-                DhcpPacket.leaseTime = int.from_bytes(
+                self.packet.leaseTime = int.from_bytes(
                     moreBytes, 'big', signed=False)
             self.__optionType = None
             self.__optionLen = None
