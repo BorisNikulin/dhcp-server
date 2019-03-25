@@ -6,7 +6,7 @@ from socket import *
 
 
 SERVER_PORT = 4200
-SERVER_INTERFACE = '192.168.0.255'
+SERVER_INTERFACE = '255.255.255.255'
 
 class DhcpClient:
     """Dhcp Client Logic"""
