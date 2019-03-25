@@ -1,51 +1,33 @@
-from src import *
-from socket import *
+from dhcp_client_class import DhcpClient
+from dhcp_transaction import TransactionType
 
-class DhcpClient:
-    """Main client class"""
+class DhcpClientUI:
+    """Client UI"""
 
     def __init__(self):
 
-        clientIp: IPv4Address
-        serverName = 'localhost'
-        serverPort = 12000
-        clientSocket = socket(AF_INET, SOCK_DGRAM)
-
-        #first connection
-        connectToServer(TransactionType.REQUEST)
+        #initialize DhcpClient, which sends DISCOVER message to server
+        dhcpClient = DhcpClient()
+        newIP: int(self.dhcpClient.clientIp)
         
-        #after ACK
-        userInput: str
+        print("Client: new IP address is " + newIp)
+
         while True:
+            print("\nClient: Choose option: \n"+
+                  "_____________________________ \n"+
+                  "(1) Renew lease \n"+
+                  "(2) Release IP address\n"+
+                  "(3) Exit\n"+
+                  "_____________________________ \n")
+            userInput: str = input()
 
-                print("1. Release\n" +
-                      "2. Renew \n" +
-                      "3. Quit \n")
-                userInput = input()
+            if userInput == "1":
+                self.dhcpClient.renew(TransactionType.RENEW)
+            elif userInput == "2":
+                self.dhcpClient.release()
+            elif userInput == "3":
+                print("Client: Exiting.")
+            else:
+                print("Client: Unrecognized input. Exiting")
 
-                if userInput == "1":
-                    connectToServer(TransactionType.RELEASE)
-                elif userInput == "2":
-                    connectToServer(TransactionType.RENEW)
-                else:
-                    if userInput == "3":
-                        print("Quitting.")
-                    else:
-                        print("Invalid input. Quitting.")
-                    clientSocket.close()
-                    quit()
-                    
-            
-    def connectToServer(self, transactionType: TransactionType)->None:
-        transaction = ClientTransaction()
-
-        #send start packet
-        clientSocket.sendto( transaction.start(transactionType),(serverName, serverPort))
-        returnPacket, serverAddress = clientSocket.recvfrom(2048)
-
-        while returnPacket is not None:
-            clientSocket.sendto(transaction.recv(returnPacket),(serverName, serverPort))
-            returnPacket, serverAddress = clientSocket.recvfrom(2048)
         
-        
-    
