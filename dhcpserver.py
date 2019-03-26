@@ -41,4 +41,6 @@ if __name__ == '__main__':
         response = server.recv(packet)
         if response is not None:
             serverSocket.sendto(
-                response.encode(), (int(IPv4Address('255.255.255.255'), SERVER_PORT)))
+                # response.encode(), (int(IPv4Address('255.255.255.255'), SERVER_PORT)))
+                response.encode(), ('144.37.199.171', SERVER_PORT))
+            # serverSocket.recv(4096)
