@@ -7,7 +7,7 @@ from socket import *
 
 
 SERVER_PORT = 4200
-SERVER_INTERFACE = '255.255.255.255'
+SERVER_INTERFACE = '144.37.118.233'
 
 class DhcpClient:
     """Dhcp Client Logic"""
@@ -15,6 +15,7 @@ class DhcpClient:
     def __init__(self):
 
         self.clientIp: IPv4Address = IPv4Address('0.0.0.0')
+        self.lastClientIp: IPv4Address = self.clientIp
         self.transaction: ClientTransaction = ClientTransaction()
         self.clientSocket = socket(AF_INET, SOCK_DGRAM)
         self.clientSocket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
@@ -37,50 +38,52 @@ class DhcpClient:
 
     def renew(self, transactionType: TransactionType)->None:
         """Start at Discover or request depending on transaction type"""
-        if transactionType is TransactionType.DISCOVER:
-            #generate start packet for discover
-            startPacket = self.transaction.start(transactionType)
+        
+        self.transaction.yourIp = self.lastClientIp
+        #generate start packet for discover
+        startPacket = self.transaction.start(transactionType)
+        
 
-            #send start packet
-            print("Client: Sending discover message.")
-            self.clientSocket.sendto( startPacket.encode(),(SERVER_INTERFACE, SERVER_PORT))
-            self.clientSocket.recv(2048)
-
-            #receive return packet
+        #send start packet
+        print(f'Packet: {startPacket}')
+        self.clientSocket.sendto( startPacket.encode(),(SERVER_INTERFACE, SERVER_PORT))
+             
+        transactionType == TransactionType.RENEW
+            
+        isTransactionOver = False
+        while not isTransactionOver:
+            #loop until transaction is finished
             returnBytes = self.clientSocket.recv(2048)
             returnPacket = self.parsePacket(returnBytes)
-            print(returnBytes)
-            print(f'Packet: {returnPacket}')
-            print("Client: Received offer message.")
+            print(f'Client: Packet received from server: \n {returnPacket}')
+            isTransactionOver, requestPacket = self.transaction.recv(returnPacket)
 
+            
+            print(f'Client: Response to server: \n Packet: {requestPacket}')
+            
+            if requestPacket is not None:
+                
+                self.clientSocket.sendto(requestPacket.encode(),(SERVER_INTERFACE, SERVER_PORT))
+            #print(f'Test A {isTransactionOver}')
+    
 
-        #generate request packet
-        requestPacket = self.transaction.recv(returnPacket)
-
-        if requestPacket is None:
-            print ("Client: Declined by server")
+        if returnPacket.messageType == MessageType.ACK:
+            self.clientIp = returnPacket.yourIp
+            self.lastClientIp = self.clientIp
         else:
-            #send request packet to server
-            print("Client: Sending request message.")
-            self.clientSocket.sendto(requestPacket.encode(),(SERVER_INTERFACE, SERVER_PORT))
-            #receive return packet
-            returnBytes, serverAddress = self.clientSocket.recvfrom(2048)
-            returnPacket = self.parsePacket(returnBytes)
-            print("Client: Received ACK message.")
-
-            if returnPacket.messageType == MessageType.ACK:
-                self.clientIp = returnPacket.yourIp
-            else:
-                print("Client: Declined by server.")
+            print("Client: Declined by server.")
 
 
     def release(self)->None:
-        self.clientIp = IPv4Address('0.0.0.0')
-
+        if self.clientIp == IPv4Address('0.0.0.0'):
+            print("Client: IP address has already been released")
+        else:
+            print("Client: Sending release message.")
+        self.clientIp = IPv4Address('0.0.0.0')            
         #generate release packet
         releasePacket = self.transaction.release()
         #send releas packet to server
-        print("Client: Sending release message.")
+        
         self.clientSocket.sendto(releasePacket.encode(),(SERVER_INTERFACE, SERVER_PORT))
 
     def disconnect(self)->None:
