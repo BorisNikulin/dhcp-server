@@ -11,8 +11,8 @@ log = logging.getLogger(__name__)
 
 Seconds = float
 
-DEFAULT_LEASE_TIME: Seconds = 30
-DEFAULT_TRANSACTION_TIMEOUT: Seconds = 600
+DEFAULT_LEASE_TIME: Seconds = 600
+DEFAULT_TRANSACTION_TIMEOUT: Seconds = 10
 
 
 class DhcpServer:
@@ -52,14 +52,14 @@ class DhcpServer:
             f'ID of {packet.transactionId}')
         log.debug(f'Recieved packet: {packet}')
 
-        self.__timeoutTransactions()
+        # self.__timeoutTransactions()
 
         transaction: Optional[ServerTransaction] = None
         returnPacket: Optional[DhcpPacket] = None
 
         if packet.transactionId not in self.__curTransactions:
             if packet.messageType is MessageType.DISCOVER:
-                if packet.clientHardwareAddr not in self.__leasedIps:
+                if packet.clientHardwareAddr not in self.__leasedIpsByMacs:
                     self.__timeoutIps()
                     self.__setNextIp()
                     if self.__nextIp is not None:
@@ -72,6 +72,12 @@ class DhcpServer:
                         self.__registerTransaction(transaction)
 
                 else:
+                    leaseTime = int(
+                           self.__leasedIps[
+                                self.__leasedIpsByMacs[
+                                    packet.clientHardwareAddr]
+                                ][0]
+                            -  time.time())
                     returnPacket = DhcpPacket.fromArgs(
                         OpCode.REPLY,
                         packet.transactionId,
@@ -81,12 +87,7 @@ class DhcpServer:
                         self.interface.ip,
                         packet.clientHardwareAddr,
                         MessageType.ACK,
-                        int(
-                            time.time()
-                            - self.__leasedIps[
-                                self.__leasedIpsByMacs[
-                                    packet.clientHardwareAddr]
-                                ][0])
+                        leaseTime if leaseTime >= 0 else 0
                         )
 
             elif packet.messageType is MessageType.REQUEST:
@@ -113,6 +114,8 @@ class DhcpServer:
                 if packet.clientHardwareAddr in self.__leasedIpsByMacs:
                     self.__freeIp(
                         self.__leasedIpsByMacs[packet.clientHardwareAddr])
+                else:
+                    log.info(f'No IP to release for {packet.clientHardwareAddr}')
 
         else:
             transaction = self.__curTransactions[packet.transactionId]
@@ -178,14 +181,16 @@ class DhcpServer:
 
         if not self.__transactionsByTimeouts.isEmpty():
             curTime = time.time()
-            while self.__transactionsByTimeouts.peekFront()[0] <= curTime:
+            while (
+                not self.__transactionsByTimeouts.isEmpty()
+                and self.__transactionsByTimeouts.peekFront()[0] <= curTime):
                 _, transaction = self.__transactionsByTimeouts.popFront()
                 del self.__curTransactions[transaction.transactionId]
 
     def __freeTransaction(self, transactionId: int) -> None:
         """Remove the transaction from the server by ID. Assumes existence."""
-        del self.__curTransactions[transactionId]
         self.__transactionsByTimeouts.removeBy(lambda t: t[1] == transactionId)
+        del self.__curTransactions[transactionId]
         log.debug(f'Freed transaction with ID {transactionId}')
 
     def __leaseIp(self, ip: IPv4Address, clientHardwareAddr: int) -> None:
@@ -200,7 +205,9 @@ class DhcpServer:
         """Unreserve IPs based on expired lease times."""
         if not self.__closestLeases.isEmpty():
             curTime = time.time()
-            while self.__closestLeases.peekFront()[0] <= curTime:
+            while (
+                not self.__closestLeases.isEmpty()
+                and self.__closestLeases.peekFront()[0] <= curTime):
                 _, ip = self.__closestLeases.peekFront()
                 _, mac = self.__leasedIps[ip]
                 log.debug(f'Freed {ip} belonging to {mac}')

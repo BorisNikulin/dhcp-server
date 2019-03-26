@@ -61,8 +61,7 @@ class DhcpPartialPacket:
         self.packet.serverIp = IPv4Address(unpacked[9])
         # mask out unneeded bits of the client hardware address
         # using the hardware address length in bytes
-        self.packet.clientHardwareAddr = unpacked[11] & (
-            (1 << (unpacked[3] * 8)) - 1)
+        self.packet.clientHardwareAddr = unpacked[11]
         self.packet.messageType = MessageType(unpacked[20])
 
         self.__optionType: Optional[int] = unpacked[21]
@@ -137,7 +136,7 @@ class DhcpPacket:
     # + type of next optional
     # uses big endianness
     # most of the fields will not be used for simplicity's sake
-    codec = Struct('>4BI2H4IQ64s128s' + '4B3B' + 'B')
+    codec = Struct('=4BI2H4IQ64s128s' + '4B3B' + 'B')
     __optionHeaderDhcpMagic = [0x63, 0x82, 0x53, 0x63]
     initialPacketSize = codec.size
 
